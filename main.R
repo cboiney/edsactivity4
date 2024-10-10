@@ -167,8 +167,6 @@ weather$unusualradiation <- ifelse(weather$SolRad > 1000 | weather$SolRad < 0,
                               0)
 
 
-check_for_unusual_values(weather$day)
-
 #Q4
 
 janmar <- weather %>%
@@ -181,7 +179,68 @@ ggplot(janmar, aes(x = dateF, y = AirTemp)) + geom_line() + labs(x = "Date",
 
 #Q5
 
+total_precip <- 0
+
+weather$AirTempFahren <- weather$AirTemp*(9/5)+32
+
 marapr <- weather %>%
   filter(month == 3 | month == 4) %>%
   filter(year == 2021)
 
+max(marapr$day)
+min(marapr$day)
+
+#going through each day
+for(i in min(marapr$day):max(marapr$day)) {
+  #take sub-array for the current day
+  current_day <- marapr %>%
+    filter(day == i)
+  #if we aren't dealing with the last day
+  if(i != max(marapr$day)) {
+    day_valid = TRUE
+    #go through each measurement of the current day
+    for(j in 1:nrow(current_day)) {
+      #if temps are too low at any measurement
+      if(current_day$AirTempFahren[j] < 35) {
+        day_valid = FALSE
+      }
+    }
+    #if the current day has a temperature that's too low, we add NAs to its temp
+    #entries, as well as those of the previous day
+    if(day_valid == FALSE) {
+      for(k in 1:nrow(marapr)) {
+        #if we are in a the current day or the previous 
+        if(marapr$day[k] == i | marapr$day[k] == i+1) {
+          #change precipitation to NA
+          marapr$Precip[k] = NA
+        }
+      }
+    }
+  }
+  #if we are dealing with the last day
+  else {
+    day_valid = TRUE
+    for(j in 1:nrow(current_day)) {
+      if(current_day$AirTempFahren[j] < 35) {
+        day_valid = FALSE
+      }
+    }
+    if (day_valid == FALSE) {
+      for(k in 1:nrow(marapr)) {
+        if(marapr$day[k] == i) {
+          marapr$Precip[k] = NA
+        }
+      }
+    }
+  }
+}
+
+count <- 0
+
+for(i in 1:nrow(marapr)) {
+  if(is.na(marapr$Precip[i])) {
+    count = count + 1
+  }
+}
+
+count
